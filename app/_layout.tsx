@@ -60,11 +60,11 @@ export default function RootLayout() {
         >
           <Tabs.Screen name="(home)" 
             options={{
-            title: 'Home',
+            title: 'Menu',
             headerTitle:'The Food House',
             headerShown: false,
             tabBarIcon: ({ color, focused }) => (
-                <TabBarIcon name={focused ? 'home' : 'home-outline'} color={tabColor} />
+                <TabBarIcon name={focused ? 'book' : 'book-outline'} color={tabColor} />
             ),
             }}
           />

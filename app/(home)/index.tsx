@@ -1,7 +1,7 @@
 import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, ImageBackground, SafeAreaView, Dimensions} from 'react-native';
 import { useState, useEffect} from 'react';
 import { BlurView } from 'expo-blur';
-import { useTheme, useIsFocused, useNavigation} from '@react-navigation/native';
+import { useTheme, useIsFocused} from '@react-navigation/native';
 import { useRouter } from "expo-router";
 import { useColorScheme } from '@/hooks/useColorScheme';
 import MenuLoader from '@/components/Loaders/MenuLoader';
