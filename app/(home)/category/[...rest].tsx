@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, ImageBackground, SafeAreaView, Dimensions, Alert } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useTheme, useIsFocused} from '@react-navigation/native';
@@ -6,7 +6,6 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import HorizontalLoader  from '@/components/Loaders/horizontalLoader';
 import { getData, get_url } from '@/components/custom/custom_request' 
 import { errorMessage } from '@/components/custom/MessageAlert'
-import ErrorComponent from '@/components/custom/ErrorComponent'
 const { height, width } = Dimensions.get('window');
 
 export default function ShowCategory() {
@@ -15,16 +14,20 @@ export default function ShowCategory() {
   const { colors } = useTheme(); 
   const { rest } = useLocalSearchParams();
   const colorScheme = useColorScheme();
-
+  const router = useRouter();
+  
   const [loadingError, setError] = useState({}); 
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true); // 
 
+  const [ITEM , CATEGORY] = [1, 0]; 
 
   const item_id = rest[0]; 
   const item_name = rest[1]; 
+
+
 
   useEffect(() => {
     navigation.setOptions({ headerShown: true, title:item_name });
@@ -32,9 +35,16 @@ export default function ShowCategory() {
 
 
 
+  const navigate = (item:any) => {
+    if(item.type === ITEM)
+      router.push(`/item/${item.id}/${item.name}`);
+    else 
+      router.push(`/category/${item.id}/${item.name}`);
+  };
+
   function itemBackground(){
     return colorScheme == 'dark' ? '#111' : '#eee'
-  }
+  }    
 
   function SkeletonLoader()
   {
@@ -48,6 +58,18 @@ export default function ShowCategory() {
       )
   }
 
+  function SkeletonMiniLoader()
+  {
+    return (
+      <FlatList
+        data={[1]} // Static array for 5 placeholders
+        renderItem={()=><HorizontalLoader height={100} />}
+        keyExtractor={(item, index) => `loader-${index}`}
+        showsVerticalScrollIndicator={false}
+      />
+    )
+  }
+
   const fetchData = async () => { // Start skeleton loader
     const result = await getData(get_url('/get-items/'+item_id+'?page='+page)); 
     if (result.data) {
@@ -55,7 +77,7 @@ export default function ShowCategory() {
       let total = data.length;
       console.log(total)
       if(total > 0)
-        setItems((prevItems) => [...prevItems, ...result.data]);
+        setItems((prevItems) => [...prevItems, ...data]);
 
       if(total < total_item){
           setHasMore(false)
@@ -93,11 +115,13 @@ export default function ShowCategory() {
               <FlatList
                 data={items}
                 renderItem={({ item }) => (
-                      <TouchableOpacity style={[styles.item, { backgroundColor: itemBackground() }]}>
+                      <TouchableOpacity style={[styles.item, { backgroundColor: itemBackground() }]} onPress={()=>navigate(item)}>
                         <View style={styles.item_con}>
                             <View style={styles.column_one}>
                               <Text style={{ color: colors.text }}>{item.name}</Text>
-                              {/* <Text style={{ color: colors.text }}>₦4,500</Text> */}
+                              {item.type == ITEM?
+                                  <Text style={{ color: colors.text }}>₦{Number(item.selling_price).toLocaleString()}</Text> : ''
+                               }
                             </View>
                             <View style={styles.column_two}>
                               <Image style={styles.item_image} resizeMode="contain" source={{ uri: item.logo }}/>
@@ -108,8 +132,9 @@ export default function ShowCategory() {
                   keyExtractor={(item, index) => index.toString()}
                   onEndReached={loadMoreItems} // Trigger pagination
                   onEndReachedThreshold={0.5} // Trigger when the user scrolls 50% to the end
-                  ListFooterComponent={hasMore ? <SkeletonLoader /> : null} // Show skeleton when loading more
+                  ListFooterComponent={hasMore ? <SkeletonMiniLoader /> : null} // Show skeleton when loading more
                   numColumns={1}  
+                  
               /> 
             }
           </View>

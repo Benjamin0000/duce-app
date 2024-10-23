@@ -10,6 +10,13 @@ import { TabBarIcon } from '@/components/navigation/TabBarIcon';
 import Intro from '../components/Intro';
 import FlashMessage from 'react-native-flash-message';
 
+import {
+  Ubuntu_300Light,
+  Ubuntu_400Regular,
+  Ubuntu_500Medium
+} from '@expo-google-fonts/ubuntu';
+
+
 SplashScreen.preventAutoHideAsync();
 const tabColor = "#ff6347";
   
@@ -19,6 +26,8 @@ export default function RootLayout() {
 
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    Ubuntu_400Regular,
+    Ubuntu_500Medium
   });
 
   useEffect(() => {

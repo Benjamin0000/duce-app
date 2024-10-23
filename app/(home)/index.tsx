@@ -35,7 +35,7 @@ const Index = () => {
 
   const navigate = (item:any) => {
     if(item.type === ITEM)
-      router.push(`/item/${item.id}`);
+      router.push(`/item/${item.id}/${item.name}`);
     else 
       router.push(`/category/${item.id}/${item.name}`);
   };

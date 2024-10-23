@@ -2,7 +2,7 @@ import React from 'react';
 import { View, FlatList, Animated, StyleSheet, Dimensions } from 'react-native';
 import { useTheme } from '@react-navigation/native'; // Import the theme hook
 
-const VerticalLoader = ({ height = 20 }) => {
+const VerticalLoader = ({ height = 20, ...rest }) => {
   const animatedValue = React.useRef(new Animated.Value(0)).current;
   const { colors } = useTheme(); // Get theme colors (light or dark)
 
