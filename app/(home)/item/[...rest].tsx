@@ -1,22 +1,31 @@
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import { Button, Text, Image, StyleSheet, SafeAreaView, View, Dimensions, ScrollView, Pressable} from 'react-native';
-import { useState, useEffect } from 'react';
+import { useLocalSearchParams, useNavigation} from 'expo-router';
+import { Text, Image, StyleSheet, SafeAreaView, View, Dimensions, ScrollView, Pressable} from 'react-native';
+import { useState, useEffect, useContext, useRef } from 'react';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { get_url, getData } from '@/components/custom/custom_request';
 import HorizontalLoader  from '@/components/Loaders/horizontalLoader';
 import { errorMessage } from '@/components/custom/MessageAlert';
 import { Collapsible } from '@/components/Collapsible';
 import { useTheme } from '@react-navigation/native';
+import { CartContext } from '../../../components/context/CartContext';
+import { Ionicons } from '@expo/vector-icons';
+
 const { height, width } = Dimensions.get('window');
 
 export default function ShowItem() {
   const navigation = useNavigation();
   const colorScheme = useColorScheme();
+  const { cart, getItem, addToCart, removeFromCart, deleteFromCart } = useContext(CartContext);
+
   const { colors } = useTheme(); 
   const { rest } = useLocalSearchParams();
   const [loading, setLoading] = useState(false);
   const [item, setItem] = useState({}); 
   const [addons, setAddons] = useState([])
+  const [openedAddons, setOpenedAddons] = useState([]); 
+  const [cart_item, setCartItem] = useState({}); 
+  const addOnsInCart = useRef([]);
+
 
   const item_id = rest[0]; 
   const item_name = rest[1]; 
@@ -39,10 +48,16 @@ export default function ShowItem() {
     navigation.setOptions({ headerShown: true, title:item_name });
   }, [navigation]);
 
+  useEffect(()=>{
+    console.log('cart updated in show view')
+    let theItem = getItem(item.id)
+    setCartItem(theItem)
+    console.log(addOnsInCart.current)
+  }, [cart])
+
   useEffect(() => {
     setLoading(true);
     fetchData(); // Initial load of the first page
-    console.log('first mount')
   }, []);
 
   const fetchData = async () => { // Start skeleton loader
@@ -51,7 +66,21 @@ export default function ShowItem() {
     if (result.data) {
         let item = result.data.item;
         setItem(item); 
-        setAddons(item.addons); 
+        setAddons(item.addons);
+        let theItem = getItem(item.id)
+        setCartItem(theItem)
+
+        addOnsInCart.current = item.addons.reduce((result, adds) => {
+          adds.items.forEach(add_item => {
+            const isInCart = cart.some(cart_item => cart_item.id === add_item.id);
+            const alreadyAdded = result.includes(adds.id);
+            if (isInCart && !alreadyAdded) {
+              result.push(adds.id);
+            }
+          });
+          return result;
+        }, []);
+
     } else if (result.error) {
         errorMessage(`${result.error.message}`, `${result.error.title}`);
     }
@@ -87,19 +116,34 @@ export default function ShowItem() {
                 <ScrollView>
                     <View style={{marginTop:10}}>
                       
-                          
                        { addons.map((addon, index) => (
+                       
                         <View style={{marginBottom: 3}} key={index}>
-                          <Collapsible  title={addon.title} header_style={{height:50}}>
+                          <Collapsible open={addOnsInCart.current.includes(addon.id)} title={addon.title} header_style={{height:50}}>
                               {addon.items.map((item, index)=>{
+                                let add = getItem(item.id); 
+                               
                                 return (
-                                  <Pressable style={styles.addon_con} key={index}>
-                                    <View style={styles.addon_left}>
+                                  <Pressable onPress={()=>addToCart(item)} style={styles.addon_con} key={index}>
+                                    { add.qty ?
+                                      <View style={{width:'10%', paddingLeft:5}}>
+                                        <Text style={{color:'#ff6347'}}>{add.qty}x</Text>
+                                      </View> : ''
+                                    }
+                                    <View style={{width: add.qty ? '54%' : '70%', padding:5}}>
                                         <Text style={{color: colors.text}}>{item.name}</Text>
+                                        <Text style={{color: colors.text, fontSize:10}}>₦{Number(item.selling_price).toLocaleString()}</Text>
                                     </View>
-                                    <View style={styles.addon_right}>
+
+                                    <View style={[styles.addon_right, {width: '30%' } ]}>
                                       <Image style={styles.addon_image} resizeMode="contain" source={{ uri: item.logo }} />
                                     </View>
+
+                                    { add.qty ?
+                                      <Pressable onPress={()=>deleteFromCart(add.id)} style={{width:'6%'}}>
+                                        <Ionicons color='#ff6347' name='trash' size={20} />
+                                      </Pressable> : ''
+                                    }
                                   </Pressable>
                                 )
                               })}
@@ -111,17 +155,17 @@ export default function ShowItem() {
 
                   <View style={{height: 230}}>
                     <View style={{alignItems:'center', marginTop:20}}>
-                      <Text style={{fontSize:18, color: colors.text}}>Number of Packs</Text>
+                      <Text style={{fontSize:18, color: colors.text}}>Quantity</Text>
                     </View>
                       
                     <View style={styles.numbers_con}>
-                      <Pressable  style={[styles.make_circle,  {marginRight:10, borderColor: colors.text}]}>
+                      <Pressable onPress={()=>removeFromCart(item.id)}  style={[styles.make_circle,  {marginRight:10, borderColor: colors.text}]}>
                         <Text style={[{color: colors.text, fontSize:20}]}>—</Text>
                       </Pressable>
                       <View style={{height:60, justifyContent:'center'}}>
-                        <Text style={{color: colors.text, fontSize:20, fontWeight:'bold'}}>0</Text>
+                        <Text style={{color: colors.text, fontSize:20, fontWeight:'bold'}}>{cart_item.qty ??  0}</Text>
                       </View>
-                      <Pressable style={[styles.make_circle, {marginLeft:10, borderColor: colors.text}]}>
+                      <Pressable onPress={()=>addToCart(item)} style={[styles.make_circle, {marginLeft:10, borderColor: colors.text}]}>
                         <Text style={[{color: colors.text, fontSize:20}]}>+</Text>
                       </Pressable>
                     </View>
@@ -193,13 +237,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', // Space between text and image
     alignItems: 'center',
     minHeight: 50,
-    marginBottom:5
+    marginBottom:5,
   },
   addon_left: {
     width: '70%',
   },
   addon_right: {
-    width: '30%',
     justifyContent: 'center',
     alignItems: 'center', // Centers the image horizontally
     padding: 5, // Adds some padding to give the image space

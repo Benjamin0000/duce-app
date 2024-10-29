@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, ImageBackground, SafeAreaView, Dimensions, Alert } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, SafeAreaView, Dimensions} from 'react-native';
 import { useState, useEffect } from 'react';
 import { useTheme, useIsFocused} from '@react-navigation/native';
 import { useColorScheme } from '@/hooks/useColorScheme';

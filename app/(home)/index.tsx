@@ -77,7 +77,7 @@ const Index = () => {
               <LogoTitle/> 
             </BlurView> 
         </ImageBackground>
-
+    
         <View style={[styles.listContainer, {backgroundColor: colors.background}]}>
           <Text style={[styles.pageHeader, { color: colors.text }]}>Our menu</Text>
           <View style={styles.itemContainer}>
