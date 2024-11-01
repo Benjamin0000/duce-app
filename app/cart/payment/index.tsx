@@ -1,115 +1,99 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Dimensions, ScrollView, Switch } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Dimensions, ScrollView, Image, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useTheme, useFocusEffect } from '@react-navigation/native';
+import { useTheme } from '@react-navigation/native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { CartContext } from '../../../components/context/CartContext';
 import EvilIcons from '@expo/vector-icons/EvilIcons';
-import LoaderOverlay from '../../../components/Loaders/LoaderOverlay'
+import * as Location from 'expo-location';
+import LoaderOverlay from '../../../components/Loaders/LoaderOverlay';
+import CustomSelect from '../../../components/custom/Select';
+import { errorMessage } from '@/components/custom/MessageAlert';
 
 const { height } = Dimensions.get('window');
 
 export default function FinishOrder() {
-    const { colors } = useTheme(); 
+    const { colors } = useTheme();
     const theme = useColorScheme();
-    const {total_cost} = useContext(CartContext); 
-    const [loading, setLoading] = useState(false); 
+    const { total_cost, branch } = useContext(CartContext);
+    const [loading, setLoading] = useState(false);
     const [isDelivery, setIsDelivery] = useState(true);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
+    const [isPin, setIsPin] = useState(true);
+
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [selectedTime, setSelectedTime] = useState(new Date());
+
     const [deliveryAddress, setDeliveryAddress] = useState('');
-    const [discountCode, setDiscountCode] = useState(''); 
-    const [discount, setDiscount] = useState(0); 
-    const [deliveryCost, setDeliveryCost] = useState(20); 
+    const [locationPoint, setLocationPoint] = useState('');
+    const [discountCode, setDiscountCode] = useState('');
+    const [discount, setDiscount] = useState(0);
+    const [deliveryCost, setDeliveryCost] = useState(0);
+    const [selectedLocation, setSelectedLocation] = useState(null);
+    const [locations, setLocations] = useState(null);
 
+    const [name, setName] = useState('');
+    const [mobile, setMobile] = useState('');
+    const [email, setEmail] = useState('');
 
-    const totalCostWithDiscount = ()=>{
-        let total = total_cost; 
-
-        if(discount > 0){
-            total -= (discount / 100) * total; 
+    const requestLocation = async () => {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+            errorMessage("Permission to access location was denied");
+            return;
         }
+        const location = await Location.getCurrentPositionAsync({});
+        setLocationPoint(`${location.coords.latitude},${location.coords.longitude}`);
+    };
 
-        if(isDelivery){
-            total += deliveryCost; 
-        }
-        return total; 
-    }
-
-    const totalCostNoDiscount = ()=>{
-        let total = total_cost;
-        if(isDelivery){
-            total += deliveryCost; 
-        }
-        return total; 
-    }
-    
-
-    const inputStyles = [
-        styles.input,
-        theme === 'dark' ? styles.inputDark : styles.inputLight,
-        // {color:colors.text}
-    ];
-
-    // Handle date and time selection
     const onChangeDate = (event, date) => {
         setShowDatePicker(false);
-        if (date) setSelectedDate(date);
+        if (date) {
+            const today = new Date();
+            if (date < today) {
+                errorMessage("Selected date is in the past. Please choose a valid date.");
+            } else {
+                setSelectedDate(date);
+            }
+        }
     };
 
     const onChangeTime = (event, time) => {
         setShowTimePicker(false);
-        if (time) setSelectedTime(time);
+        if (time) {
+            const hours = time.getHours();
+            if (hours < 9 || hours > 20) {
+                errorMessage("Please select a time between 9:00 AM and 8:00 PM.");
+            } else {
+                setSelectedTime(time);
+            }
+        }
     };
-
-    const borderColorForToggle = ()=>{
-        return theme == 'dark' ? '#555' : '#ddd'
-    }
-
-    const pickUpBackground = ()=>{
-        return theme == 'dark' ? '#444' : '#ddd'
-    }
-
-    const pickupBorderColor = ()=>{
-        return theme == 'dark' ? '#555' : '#eee'
-    }
-
-    const locationBorder = ()=>{
-        return theme == 'dark' ? '#555' : '#aaa'
-    }
-
 
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={[styles.Container, { backgroundColor: colors.background }]}>
-
-            <LoaderOverlay visible={loading} />
+                <LoaderOverlay visible={loading} />
 
                 <ScrollView>
                     <View style={{ padding: 10 }}>
-                        <View>
-                            <Text style={[styles.info_header, {color:colors.text}]}>Personal Info</Text>
-                            <TextInput style={inputStyles} placeholderTextColor={colors.text} placeholder="Full name" />
-                            <TextInput style={inputStyles} placeholderTextColor={colors.text} placeholder="Mobile number" />
-                            <TextInput style={inputStyles} placeholderTextColor={colors.text} placeholder="Email address (optional)" />
-                        </View>
+                        {/* Other components */}
 
                         <View>
-                            <Text style={[styles.info_header, {color:colors.text}]}>Delivery Info</Text>
+                            <Text style={[styles.info_header, { color: colors.text }]}>Delivery Info</Text>
                             <View style={styles.toggleContainer}>
                                 <TouchableOpacity
-                                    style={[styles.toggleButton, isDelivery && styles.activeButton, {borderColor:borderColorForToggle()}]}
+                                    style={[styles.toggleButton, isDelivery && styles.activeButton]}
                                     onPress={() => setIsDelivery(true)}
                                 >
-                                    <Text style={[styles.toggleText, {color:isDelivery ?'white':colors.text}]}>Delivery</Text>
+                                    <Text style={[styles.toggleText, { color: isDelivery ? 'white' : colors.text }]}>Delivery</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    style={[styles.toggleButton, !isDelivery && styles.activeButton, {borderColor:borderColorForToggle()}]}
+                                    style={[styles.toggleButton, !isDelivery && styles.activeButton]}
                                     onPress={() => setIsDelivery(false)}
                                 >
-                                    <Text style={[styles.toggleText, {color: !isDelivery ?'white':colors.text }]}>Pickup</Text>
+                                    <Text style={[styles.toggleText, { color: !isDelivery ? 'white' : colors.text }]}>Pickup</Text>
                                 </TouchableOpacity>
                             </View>
 
@@ -122,112 +106,66 @@ export default function FinishOrder() {
                                         onChangeText={setDeliveryAddress}
                                         placeholderTextColor={colors.text}
                                     />
-                                    <View style={{borderColor :locationBorder(), borderWidth:1, padding:10}}>
-                                        <Text style={{textAlign:'center', color: colors.text}}>
-                                            Let's capture your precise location to help the delivery person find you easily.
-                                        </Text>
-                                        <TouchableOpacity style={[styles.locationButton, {flexDirection: 'row', justifyContent:'center'}]}>
-                                            <Text style={[styles.locationButtonText]}>
-                                                Pin Location
-                                            </Text>
-                                            <Text>
-                                                <EvilIcons name="location" size={23} color="#ff6347" />
-                                            </Text>
+
+                                    <View style={styles.toggleContainer}>
+                                        <TouchableOpacity
+                                            style={[styles.toggleButton, isPin && styles.activeButton]}
+                                            onPress={() => setIsPin(true)}
+                                        >
+                                            <Text style={[styles.toggleText, { color: isPin ? 'white' : colors.text }]}>Pin Location</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[styles.toggleButton, !isPin && styles.activeButton]}
+                                            onPress={() => setIsPin(false)}
+                                        >
+                                            <Text style={[styles.toggleText, { color: !isPin ? 'white' : colors.text }]}>Set Location</Text>
                                         </TouchableOpacity>
                                     </View>
-                                    
+
+                                    {isPin ? (
+                                        <View style={{ padding: 10 }}>
+                                            <Text style={{ textAlign: 'center', color: colors.text }}>
+                                                Capture your precise location to help the delivery person find you easily.
+                                            </Text>
+                                            <TouchableOpacity onPress={requestLocation} style={styles.locationButton}>
+                                                <Text style={styles.locationButtonText}>Pin Location</Text>
+                                                <EvilIcons name="location" size={23} color="#ff6347" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    ) : (
+                                        <CustomSelect
+                                            options={locations}
+                                            selectedValue={selectedLocation}
+                                            onValueChange={setSelectedLocation}
+                                            title="Select a location"
+                                        />
+                                    )}
                                 </>
                             ) : (
                                 <>
-                                    <View style={{flexDirection:'row', backgroundColor:pickUpBackground()}}>
-                                        <TouchableOpacity style={[styles.datePickerCon, {borderColor :pickupBorderColor()}]} onPress={() => setShowDatePicker(true)}>
-                                            <Text style={[styles.datePickerText, {color:colors.text}]}>
-                                                Set pickup date
-                                            </Text>
-                                            <Text style={[styles.datePickerText, {color:colors.text}]}>
-                                                {selectedDate.toLocaleDateString()}
-                                            </Text>
+                                    <View style={{ flexDirection: 'row' }}>
+                                        <TouchableOpacity style={styles.datePickerCon} onPress={() => setShowDatePicker(true)}>
+                                            <Text style={styles.datePickerText}>Set pickup date</Text>
+                                            <Text style={styles.datePickerText}>{selectedDate.toLocaleDateString()}</Text>
                                         </TouchableOpacity>
 
-                                        <TouchableOpacity style={[styles.datePickerCon, {borderColor :pickupBorderColor()}]} onPress={() => setShowTimePicker(true)}>
-                                            <Text style={[styles.datePickerText, {color:colors.text}]}>
-                                                Set pickup time
-                                            </Text>
-                                            <Text style={[styles.datePickerText, {color:colors.text}]}>
+                                        <TouchableOpacity style={styles.datePickerCon} onPress={() => setShowTimePicker(true)}>
+                                            <Text style={styles.datePickerText}>Set pickup time</Text>
+                                            <Text style={styles.datePickerText}>
                                                 {selectedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </Text>
                                         </TouchableOpacity>
                                     </View>
 
                                     {showDatePicker && (
-                                        <DateTimePicker
-                                            mode="date"
-                                            value={selectedDate}
-                                            onChange={onChangeDate}
-                                        />
+                                        <DateTimePicker mode="date" value={selectedDate} onChange={onChangeDate} />
                                     )}
-
                                     {showTimePicker && (
-                                        <DateTimePicker
-                                            mode="time"
-                                            value={selectedTime}
-                                            onChange={onChangeTime}
-                                        />
+                                        <DateTimePicker mode="time" value={selectedTime} onChange={onChangeTime} />
                                     )}
                                 </>
                             )}
                         </View>
-
-                        <View style={{flexDirection:'row', marginTop:10}}>
-                            <View style={{width:'40%', marginTop:10}}>
-                                <Text style={[styles.total_text, {color:colors.text}]}>Discount Code:</Text>
-                            </View>
-                            <View style={{width:'60%'}}>
-                                <TextInput style={inputStyles} onChangeText={setDiscountCode} placeholderTextColor={colors.text} placeholder="Enter Code (optional)" />
-                            </View>
-                        </View>
-
-                        { isDelivery && deliveryCost > 0?
-                            <View style={{flexDirection:'row', marginTop:10}}>
-                                <View style={{width:'50%'}}>
-                                    <Text style={[styles.total_text, {color:colors.text}]}>Delivery Cost</Text>
-                                </View>
-                                <View style={{width:'50%', alignItems:'flex-end'}}>
-                                    <Text style={[styles.total_text, {color:colors.text}]}>₦{Number(deliveryCost).toLocaleString()}</Text>
-                                </View>
-                            </View> : ''
-                        }
-
-                        <View style={{flexDirection:'row', marginTop:10}}>
-                            <View style={{width:'50%'}}>
-                                <Text style={[styles.total_text, {color:colors.text}]}>Item Cost</Text>
-                            </View>
-                            <View style={{width:'50%', alignItems:'flex-end'}}>
-                                <Text style={[styles.total_text, {color:colors.text}]}>₦{Number(total_cost).toLocaleString()}</Text>
-                            </View>
-                        </View>
-
-                        <View style={{flexDirection:'row', marginTop:10}}>
-                            <View style={{width:'30%'}}>
-                                <Text style={[styles.total_text, {color:colors.text}]}>Total Cost</Text>
-                            </View>
-                            <View style={{width:'70%', alignItems:'flex-end'}}>
-                                <Text style={[styles.total_text, {color:colors.text}]}>
-                                    ₦{Number(totalCostWithDiscount()).toLocaleString()} {' '}
-                                    { discount ?
-                                        <Text style={{textDecorationLine: 'line-through', fontSize:15}}>₦{Number(totalCostNoDiscount()).toLocaleString()}</Text>
-                                    : ''
-                                    }
-                                </Text>
-                                
-                            </View>
-                        </View>
-
-
-
-                        <TouchableOpacity style={styles.proceedButton}>
-                            <Text style={styles.proceedButtonText}>Proceed to Make Payment</Text>
-                        </TouchableOpacity>
                     </View>
                 </ScrollView>
             </View>
@@ -239,6 +177,31 @@ const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
         backgroundColor: '#000'  // To prevent any potential gaps on device edges
+    },
+    item: {
+        marginBottom: 5,
+        minHeight: 100, // Set a minimum height for each item
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 10,
+    },
+    item_con: {
+        flexDirection: 'row',
+        flex: 1,
+        justifyContent: 'space-between',
+    },
+    column_one: {
+        width: '70%',
+        justifyContent: 'center',
+    },
+    column_two: {
+        width: '30%',
+        height: 100, // Set a height for the image container if needed
+        alignItems: 'flex-end',
+    },
+    item_image: {
+        width: '100%',
+        height: '100%',
     },
     Container: {
         flex: 1,

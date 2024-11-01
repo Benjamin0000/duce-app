@@ -1,5 +1,5 @@
-import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, ImageBackground, SafeAreaView, Dimensions} from 'react-native';
-import { useState, useEffect} from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, ImageBackground, SafeAreaView, Dimensions, Pressable} from 'react-native';
+import { useState, useEffect, useContext} from 'react';
 import { BlurView } from 'expo-blur';
 import { useTheme, useIsFocused} from '@react-navigation/native';
 import { useRouter } from "expo-router";
@@ -8,6 +8,9 @@ import MenuLoader from '@/components/Loaders/MenuLoader';
 import { errorMessage } from '@/components/custom/MessageAlert'
 import ErrorComponent from '@/components/custom/ErrorComponent'
 import { getData, get_url} from '@/components/custom/custom_request' 
+import { CartContext } from '../../components/context/CartContext';
+import SelectBranch from '@/components/custom/SelectBranch';
+import { Ionicons } from '@expo/vector-icons';
 
 const { height, width } = Dimensions.get('window');
 const screenWidth = width;
@@ -23,6 +26,7 @@ function LogoTitle() {
 }
 
 const Index = () => {
+  const {branch, setBranches, setBranch} = useContext(CartContext);
   const { colors } = useTheme(); 
   const [categories, setCategories] = useState([]); 
   const [loadingMenu, setLoadingMenu] = useState(true); 
@@ -30,10 +34,16 @@ const Index = () => {
   const isFocused = useIsFocused();
   const colorScheme = useColorScheme();
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showBranches, setShowBranches] = useState(false); 
   const router = useRouter();
  
 
   const navigate = (item:any) => {
+    if(!branch){
+      toggleBranches(); 
+      return ;
+    }
+
     if(item.type === ITEM)
       router.push(`/item/${item.id}/${item.name}`);
     else 
@@ -45,15 +55,21 @@ const Index = () => {
   }
 
   const handleRetry = () => {
-    setRefreshKey(prevKey => prevKey + 1);
+    setRefreshKey(prevKey => prevKey + 1); 
   };
 
   const fetchData = async () => {
     setError({})
-    const result = await getData(get_url('/get-category'));
+    const selectedBranch = branch ? branch.id : ''; 
+    const result = await getData(get_url('/get-category/'+selectedBranch));
     if (result.data) {
-      setCategories(result.data);
-      setLoadingMenu(false); 
+      setCategories(result.data.items);
+      setLoadingMenu(false);
+      setBranches(result.data.branches);
+      
+      if(result.data.branches.length == 1){
+        setBranch(result.data.branches[0]); 
+      }
     } else if (result.error) {
       setError(result.error);
       errorMessage(`${result.error.message}`, `${result.error.title}`);
@@ -65,7 +81,11 @@ const Index = () => {
     if(isFocused){
       fetchData();
     }
-  }, [isFocused, refreshKey])
+  }, [isFocused, refreshKey, branch])
+
+  const toggleBranches = () => {
+    setShowBranches(!showBranches);
+  };
 
   return (
     <>
@@ -77,6 +97,12 @@ const Index = () => {
               <LogoTitle/> 
             </BlurView> 
         </ImageBackground>
+
+        <SelectBranch isVisible={showBranches} setIsVisible={setShowBranches} />
+
+        <TouchableOpacity onPress={toggleBranches} style={styles.branch_select_button}>
+          <Text style={{color:'white', fontWeight: 'bold', fontSize:16}}>Branches <Ionicons name='home-outline'/></Text>
+        </TouchableOpacity>
     
         <View style={[styles.listContainer, {backgroundColor: colors.background}]}>
           <Text style={[styles.pageHeader, { color: colors.text }]}>Our menu</Text>
@@ -178,5 +204,22 @@ const styles = StyleSheet.create({
   image_item: {
     width:50,
     height:50
+  }, 
+  branch_select_button: {
+    position: 'absolute',
+    bottom: 2,         // Adjust this to see the CartIcon more clearly
+   // left: 10,         // Adjust this if it's too close to the edge
+    backgroundColor: '#ff6347', // Visible background color
+    borderTopRightRadius: 25,
+    borderBottomRightRadius: 25,
+    padding: 10,
+    zIndex: 100,        // Ensures it stays above other elements
+    elevation: 5,       // Adds shadow for Android
+    shadowColor: '#000', // Adds shadow for iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 2,
+    justifyContent:'center',
+    flexDirection: 'row',
   }
 });

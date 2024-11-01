@@ -4,84 +4,126 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-  const [cart, setCart] = useState([]);
+  const [carts, setCarts] = useState({}); // Store carts for each branch as an object
   const [total_cost, setTotal] = useState(0); 
   const [isCartScreen, setIsCartScreen] = useState(false);
+  const [branch, setBranch] = useState(null); // Current branch
+  const [branches, setBranches] = useState([]); 
 
-
-  const calculateTotal = ()=>{
+  const calculateTotal = (currentCart) => {
     let cost = 0;
-    cart.forEach(item => {
-        cost += (item.price * item.qty);
+    currentCart.forEach(item => {
+      cost += (item.price * item.qty);
     });
     setTotal(cost); 
   }; 
 
   // Load cart from AsyncStorage
   useEffect(() => {
-    const loadCart = async () => {
-      const savedCart = await AsyncStorage.getItem('cart');
-      if (savedCart) {
-        setCart(JSON.parse(savedCart));
+    const loadCarts = async () => {
+      const savedCarts = await AsyncStorage.getItem('carts');
+      if (savedCarts) {
+        setCarts(JSON.parse(savedCarts));
       }
     };
-    loadCart();
+    loadCarts();
+    console.log('cart context has mounted');
   }, []);
 
-
-
-  // Save cart to AsyncStorage when it changes
+  // Save carts to AsyncStorage when they change
   useEffect(() => {
-    AsyncStorage.setItem('cart', JSON.stringify(cart));
-    calculateTotal(); 
-    console.log('from the cart')
-  }, [cart]);
+    AsyncStorage.setItem('carts', JSON.stringify(carts));
+    if (branch) {
+      calculateTotal(carts[branch.id] || []); // Calculate total for the current branch's cart
+    }
+  }, [carts, branch]);
 
   const addToCart = (Item) => {
-    // Check if item already exists in cart
-    const itemIndex = cart.findIndex(item => item.id === Item.id);
+    if (!branch) return; // Do nothing if no branch is set
+
+    // Get the current branch's cart
+    const currentCart = carts[branch.id] || [];
+
+    // Check if item already exists in the current cart
+    const itemIndex = currentCart.findIndex(item => item.id === Item.id);
   
+    let updatedCart;
+
     if (itemIndex !== -1) {
       // If the item exists, create a new cart array with the quantity incremented
-      const updatedCart = cart.map((item, index) => 
+      updatedCart = currentCart.map((item, index) => 
         index === itemIndex ? { ...item, qty: item.qty + 1 } : item
       );
-      setCart(updatedCart);
     } else {
       // If the item doesn't exist, add it to the cart with qty 1
-      setCart([...cart, { id: Item.id, name: Item.name, qty: 1, price: Item.selling_price, logo:Item.logo } ]);
+      updatedCart = [...currentCart, { id: Item.id, name: Item.name, qty: 1, price: Item.selling_price, logo: Item.logo }];
     }
+
+    // Update the carts state for the current branch
+    setCarts(prevCarts => ({
+      ...prevCarts,
+      [branch.id]: updatedCart,
+    }));
   };
   
-
   const removeFromCart = (itemId) => {
+    if (!branch) return; // Do nothing if no branch is set
 
-     // Check if item exists in the cart
-    const itemIndex = cart.findIndex(item => item.id === itemId);
+    // Get the current branch's cart
+    const currentCart = carts[branch.id] || [];
+
+    // Check if item exists in the current cart
+    const itemIndex = currentCart.findIndex(item => item.id === itemId);
 
     if (itemIndex !== -1) {
-      const updatedCart = cart.map((item, index) =>
+      const updatedCart = currentCart.map((item, index) =>
         index === itemIndex ? { ...item, qty: item.qty - 1 } : item
       ).filter(item => item.qty > 0); // Remove item if qty is 0
 
-      setCart(updatedCart);
+      // Update the carts state for the current branch
+      setCarts(prevCarts => ({
+        ...prevCarts,
+        [branch.id]: updatedCart,
+      }));
     }
   };
 
-  const deleteFromCart = (itemId) =>{
-    setCart(cart.filter(item => item.id !== itemId));
-  }
+  const deleteFromCart = (itemId) => {
+    if (!branch) return; // Do nothing if no branch is set
+
+    // Update the carts state for the current branch
+    setCarts(prevCarts => ({
+      ...prevCarts,
+      [branch.id]: prevCarts[branch.id].filter(item => item.id !== itemId),
+    }));
+  };
 
   const getItem = (itemId) => {
-    const itemIndex = cart.findIndex(item => item.id === itemId);
+    if (!branch) return {}; // Do nothing if no branch is set
+
+    const currentCart = carts[branch.id] || [];
+    const itemIndex = currentCart.findIndex(item => item.id === itemId);
     if (itemIndex !== -1) {
-      return cart[itemIndex]; 
+      return currentCart[itemIndex]; 
     }
     return {}; 
-  }
+  };
 
   return (
-    <CartContext.Provider value={{ cart, total_cost, addToCart, removeFromCart, getItem, deleteFromCart, isCartScreen, setIsCartScreen }}>
+    <CartContext.Provider value={{ 
+      cart: carts[branch?.id] || [], // Get the current branch's cart
+      total_cost, 
+      addToCart, 
+      removeFromCart, 
+      getItem, 
+      deleteFromCart, 
+      isCartScreen, 
+      setIsCartScreen, 
+      branch, 
+      setBranch,
+      branches,
+      setBranches
+    }}>
       {children}
     </CartContext.Provider>
   );

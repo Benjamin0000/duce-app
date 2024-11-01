@@ -1,14 +1,16 @@
 import React from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
-
+import { useTheme } from '@react-navigation/native';
 const ErrorComponent = ({ title, message, onRetry }) => {
+  const { colors } = useTheme(); 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.message}>{message}</Text>
+      <Text style={[styles.title, {color:colors.text}]}>{title}</Text>
+      <Text style={[styles.message, {color:colors.text}]}>{message}</Text>
       <Button 
         title="Reload"
         onPress={onRetry}
+        color='#ff6347'
       />
     </View>
   );
@@ -20,7 +22,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#ff6347', // Light red for error background
   },
   title: {
     fontSize: 24,

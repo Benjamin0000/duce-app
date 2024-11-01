@@ -9,13 +9,13 @@ export const PasswordPrevInput = ({...props}) => {
     const [password, setPassword] = useState('');
 
     const togglePasswordVisibility = () => {
-        setPasswordVisible((prev) => !prev);
+      setPasswordVisible((prev) => !prev);
     };
 
     const containerStyles = [
-        styles.container,
-        theme === 'dark' ? styles.containerDark : styles.containerLight,
-      ];
+      styles.container,
+      theme === 'dark' ? styles.containerDark : styles.containerLight,
+    ];
 
     return (
         <View style={[containerStyles]}>
