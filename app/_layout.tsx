@@ -11,8 +11,6 @@ import FlashMessage from 'react-native-flash-message';
 import { CartProvider } from '../components/context/CartContext';
 import CartIcon from '../components/custom/CartIcon'; 
 
-
-
 import {
   Ubuntu_500Medium
 } from '@expo-google-fonts/ubuntu';

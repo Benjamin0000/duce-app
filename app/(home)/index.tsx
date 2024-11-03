@@ -1,4 +1,4 @@
-import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, ImageBackground, SafeAreaView, Dimensions, Pressable} from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, ImageBackground, SafeAreaView, Dimensions } from 'react-native';
 import { useState, useEffect, useContext} from 'react';
 import { BlurView } from 'expo-blur';
 import { useTheme, useIsFocused} from '@react-navigation/native';

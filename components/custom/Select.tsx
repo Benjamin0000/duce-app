@@ -27,7 +27,7 @@ const CustomSelect = ({ options, selectedValue, onValueChange, title }) => {
             <TouchableOpacity 
                 style={[styles.selectButton, containerStyles]} 
                 onPress={() => setModalVisible(true)}>
-                <Text style={[styles.selectText, {color:theme === 'dark' ? '#fff' : '#000'}]}>{selectedValue || title }</Text>
+                <Text style={[styles.selectText, {color:theme === 'dark' ? '#fff' : '#000'}]}>{selectedValue.region || title }</Text>
             </TouchableOpacity>
 
             <Modal
@@ -41,10 +41,10 @@ const CustomSelect = ({ options, selectedValue, onValueChange, title }) => {
                     <Text style={{color:colors.text, textAlign:'center'}}>{title}</Text>
                     <FlatList
                         data={options}
-                        keyExtractor={(item) => item.value.toString()}
+                        keyExtractor={(item, index) => index.toString()}
                         renderItem={({ item }) => (
-                        <TouchableOpacity style={styles.option} onPress={() => handleSelect(item.value)}>
-                            <Text style={[styles.optionText, {color:colors.text}]}>{item.label}</Text>
+                        <TouchableOpacity style={styles.option} onPress={() => handleSelect(item)}>
+                            <Text style={[styles.optionText, {color:colors.text}]}>{item.region}</Text>
                         </TouchableOpacity>
                         )}
                     />
