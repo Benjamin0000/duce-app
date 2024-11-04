@@ -11,6 +11,7 @@ import { errorMessage } from '@/components/custom/MessageAlert'
 import * as Location from 'expo-location';
 import { getData, get_url, calculateDistance, postData} from '@/components/custom/custom_request' 
 import ErrorComponent from '@/components/custom/ErrorComponent'
+import PaymentScreen from '@/components/ProcessPayment';
 
 const { height } = Dimensions.get('window');
 
@@ -19,7 +20,7 @@ export default function FinishOrder() {
     const { colors } = useTheme(); 
     const theme = useColorScheme();
     const [refreshKey, setRefreshKey] = useState(0);
-    const {total_cost, branch, authToken, cart} = useContext(CartContext); 
+    const {total_cost, branch, authToken, setAuthToken, cart} = useContext(CartContext); 
     const [vat, setVat] = useState(0);
     const [loading, setLoading] = useState(false); 
     const [isDelivery, setIsDelivery] = useState(true);
@@ -45,6 +46,9 @@ export default function FinishOrder() {
     const [mobile, setMobile] = useState('');
     const [email, setEmail] = useState('');
     const [note, setNote] = useState(''); 
+    const [showWebView, setShowWebView] = useState(false); 
+    const [webViewUrl, setWebViewUrl] = useState('');
+
     const selectedBranch = branch ? branch.id : ''; 
 
     useEffect(()=>{
@@ -52,10 +56,20 @@ export default function FinishOrder() {
     }, [])
 
 
-
     useEffect(()=>{
         get_locations_and_discount(); 
     }, [refreshKey])
+
+    // Function to toggle WebView visibility
+    const openWebView = (url) => {
+        setWebViewUrl(url);
+        setShowWebView(true);  // Show the WebView
+    };
+
+    const closeWebView = () => {
+        setShowWebView(false); // Hide the WebView
+        setWebViewUrl(''); 
+    };
 
 
     const handleRetry = () => {
@@ -166,7 +180,7 @@ export default function FinishOrder() {
             'is_pickup':isDelivery ? 'no' : 'yes',
             'address':deliveryAddress,
             'pined_location':locationPoint,
-            'selected_location':selectedLocation.id, 
+            'selected_location': isDelivery ? selectedLocation.id : '', 
             'pickup_time':selectedTime,
             'pickup_date':selectedDate,
             'discount_code':discountCode,
@@ -174,16 +188,25 @@ export default function FinishOrder() {
             'items':cart.map(({ id, qty, price, name }) => ({ id, qty, price, name }))
         }
         setLoading(true)
-        let response = await postData(get_url('/process-order/'+selectedBranch), data, authToken); 
+        let response = await postData(get_url('/process-order/'+selectedBranch), data, authToken.token); 
 
         if (response.data) {
+            let data = response.data; 
             setLoading(false)
             console.log('result'); 
-            console.log(JSON.stringify(response, null, 4));
+            console.log(data);
+
+            if(data.token)
+                setAuthToken({token:data.token}); 
+
+            openWebView(data.url); 
+
         }else if(response.error){
+            let error = response.error; 
             setLoading(false)
-            console.log('error')
-            console.log(JSON.stringify(response, null, 4));
+            console.log('error'); 
+            console.log(error);
+            errorMessage(error.message, error.title); 
         }
 
     }
@@ -355,17 +378,19 @@ export default function FinishOrder() {
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={[styles.Container, { backgroundColor: colors.background }]}>
-
             <LoaderOverlay visible={loading} />
-
-                <ScrollView>
-                { loadingError.title ?
-                    <ErrorComponent 
-                        title={loadingError.title} 
-                        message={loadingError.message} 
-                        onRetry={handleRetry}
-                    />
-                    :
+            { loadingError.title ?
+                <ErrorComponent
+                    title={loadingError.title} 
+                    message={loadingError.message} 
+                    onRetry={handleRetry}
+                />
+                :
+                <>
+                { showWebView ? 
+                    <PaymentScreen Url={webViewUrl} setShowWebView={setShowWebView} />
+                    :    
+                    <ScrollView>
                     <View style={{ padding: 10 }}>
                         <View>
                             <Text style={[styles.info_header, {color:colors.text}]}>Branch Info</Text>
@@ -389,9 +414,9 @@ export default function FinishOrder() {
                         </View>
                         <View>
                             <Text style={[styles.info_header, {color:colors.text}]}>Personal Info</Text>
-                            <TextInput style={inputStyles} onChangeText={setName} placeholderTextColor={colors.text} placeholder="Full name"/>
-                            <TextInput style={inputStyles} onChangeText={setMobile} placeholderTextColor={colors.text} placeholder="Mobile number"/>
-                            <TextInput style={inputStyles} onChangeText={setEmail} placeholderTextColor={colors.text} placeholder="Email address"/>
+                            <TextInput style={inputStyles} value={name} onChangeText={setName} placeholderTextColor={colors.text} placeholder="Full name"/>
+                            <TextInput style={inputStyles} value={mobile} onChangeText={setMobile} placeholderTextColor={colors.text} placeholder="Mobile number"/>
+                            <TextInput style={inputStyles} value={email} onChangeText={setEmail} placeholderTextColor={colors.text} placeholder="Email address"/>
                         </View>
 
                         <View>
@@ -405,7 +430,7 @@ export default function FinishOrder() {
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     style={[styles.toggleButton, !isDelivery && styles.activeButton, {borderColor:borderColorForToggle()}]}
-                                    onPress={() => setIsDelivery(false)}
+                                    onPress={() => setIsDelivery(false) }
                                 >
                                     <Text style={[styles.toggleText, {color: !isDelivery ?'white':colors.text }]}>Pickup</Text>
                                 </TouchableOpacity>
@@ -508,7 +533,7 @@ export default function FinishOrder() {
                                 <Text style={[styles.total_text, {color:colors.text}]}>Discount Code:</Text>
                             </View>
                             <View style={{width:'60%'}}>
-                                <TextInput style={[inputStyles, {marginBottom:2}]} onChangeText={(code)=>handleDiscountCodeInput(code)} placeholderTextColor={colors.text} placeholder="Enter Code (optional)" />
+                                <TextInput style={[inputStyles, {marginBottom:2}]} value={discountCode} onChangeText={(code)=>handleDiscountCodeInput(code)} placeholderTextColor={colors.text} placeholder="Enter Code (optional)" />
                                 { discountError && <Text style={{color:'red', fontSize:12}}>Invalid Discount Code</Text> }
                                 { validDiscount && <Text style={{color:'green', fontSize:12}}>{discount}% Discount Applied</Text> }
                             </View>
@@ -567,18 +592,21 @@ export default function FinishOrder() {
                             onChangeText={setNote}
                             placeholderTextColor={colors.text} 
                             placeholder="Add a short note (optional)" 
+                            value={note}
                         />
 
                         <TouchableOpacity onPress={submitOrder} style={styles.proceedButton}>
                             <Text style={styles.proceedButtonText}>Proceed to checkout</Text>
                         </TouchableOpacity>
                     </View>
-                }
                 </ScrollView>
-            </View>
-        </SafeAreaView>
-    );
-}
+                }
+                </>
+            }
+                        </View>
+                    </SafeAreaView>
+                );
+            }
 
 const styles = StyleSheet.create({
     safeArea: {
@@ -612,7 +640,7 @@ const styles = StyleSheet.create({
     },
     Container: {
         flex: 1,
-        height: height * 100,
+        height: height * 1,
         padding: 0,
     },
     input: {

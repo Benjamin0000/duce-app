@@ -38,6 +38,8 @@ export const CartProvider = ({ children }) => {
 
     loadAuthToken(); 
     console.log('cart context has mounted');
+    console.log('auth token')
+    console.log(authToken)
   }, []);
 
   // Save carts to AsyncStorage when they change
@@ -112,6 +114,16 @@ export const CartProvider = ({ children }) => {
     }));
   };
 
+  const emptyCart = () => {
+    if (!branch) return; // Do nothing if no branch is set
+    // Update the carts state for the current branch by setting it to an empty array
+    setCarts(prevCarts => ({
+      ...prevCarts,
+      [branch.id]: [], // Set the cart for the current branch to an empty array
+    }));
+  };
+  
+
   const getItem = (itemId) => {
     if (!branch) return {}; // Do nothing if no branch is set
 
@@ -138,7 +150,8 @@ export const CartProvider = ({ children }) => {
       branches,
       setBranches,
       authToken,
-      setAuthToken
+      setAuthToken,
+      emptyCart
     }}>
       {children}
     </CartContext.Provider>

@@ -68,6 +68,9 @@ export const postData = async (url: string, payload: any, token?: string) => {
     let title = "";
     let message = ""; 
 
+    
+    console.log(JSON.stringify(error.response, null, 4));
+
     if (!error.response) {
       // No response from the server - either no internet or server is unreachable
       if (error.message.includes('Network Error')) {
