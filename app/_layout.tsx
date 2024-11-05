@@ -89,8 +89,8 @@ export default function RootLayout({ navigation, route }) {
             />
             <Tabs.Screen name="history"
               options={{
-                title: 'History',
-                
+                title: 'Order History',
+                headerShown: false,
                 tabBarIcon: ({ color, focused }) => (
                   <TabBarIcon name={focused ? 'time' : 'time-outline'} color={tabColor} />
                 ),

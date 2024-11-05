@@ -1,13 +1,20 @@
 import axios from "axios";
+import HorizontalLoader from "../Loaders/horizontalLoader";
+import { FlatList } from "react-native";
 
 export const get_url = (url: string) => { 
   return 'https://dulce.triab.site/api'+url; 
 }
 
-export const getData = async (url:string) => {
+export const getData = async (url: string, token?: string) => {
+  console.log(url)
     try {
       const response = await axios.get(url, {
         timeout: 10000,  // Set a timeout to avoid indefinite waiting for a response
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
       });
       return {
         data:response.data 
@@ -123,5 +130,30 @@ export function calculateDistance(lat1, lon1, lat2, lon2) {
   return distanceInKm < 1
     ? Number((distanceInKm * 1000).toFixed(0)) / 1000  // Return distance as a decimal in km (e.g., 0.5 for 500m)
     : Math.round(distanceInKm);   
+}
+
+
+export function SkeletonLoader()
+{
+    return (
+        <FlatList
+          data={[...Array(10).keys()]} // Static array for 5 placeholders
+          renderItem={()=><HorizontalLoader height={100} />}
+          keyExtractor={(item, index) => `loader-${index}`}
+          showsVerticalScrollIndicator={false}
+        />
+    )
+}
+
+export function SkeletonMiniLoader()
+{
+  return (
+    <FlatList
+      data={[1]} // Static array for 5 placeholders
+      renderItem={()=><HorizontalLoader height={100} />}
+      keyExtractor={(item, index) => `loader-${index}`}
+      showsVerticalScrollIndicator={false}
+    />
+  )
 }
   

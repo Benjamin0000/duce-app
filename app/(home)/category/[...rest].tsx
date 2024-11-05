@@ -3,8 +3,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, SafeAreaView
 import { useState, useEffect } from 'react';
 import { useTheme, useIsFocused} from '@react-navigation/native';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import HorizontalLoader  from '@/components/Loaders/horizontalLoader';
-import { getData, get_url } from '@/components/custom/custom_request' 
+import { SkeletonLoader, SkeletonMiniLoader, getData, get_url } from '@/components/custom/custom_request' 
 import { errorMessage } from '@/components/custom/MessageAlert'
 const { height, width } = Dimensions.get('window');
 
@@ -45,30 +44,6 @@ export default function ShowCategory() {
   function itemBackground(){
     return colorScheme == 'dark' ? '#111' : '#eee'
   }    
-
-  function SkeletonLoader()
-  {
-      return (
-          <FlatList
-            data={[...Array(10).keys()]} // Static array for 5 placeholders
-            renderItem={()=><HorizontalLoader height={100} />}
-            keyExtractor={(item, index) => `loader-${index}`}
-            showsVerticalScrollIndicator={false}
-          />
-      )
-  }
-
-  function SkeletonMiniLoader()
-  {
-    return (
-      <FlatList
-        data={[1]} // Static array for 5 placeholders
-        renderItem={()=><HorizontalLoader height={100} />}
-        keyExtractor={(item, index) => `loader-${index}`}
-        showsVerticalScrollIndicator={false}
-      />
-    )
-  }
 
   const fetchData = async () => { // Start skeleton loader
     const result = await getData(get_url('/get-items/'+item_id+'?page='+page)); 
