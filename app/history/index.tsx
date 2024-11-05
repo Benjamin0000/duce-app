@@ -102,6 +102,11 @@ export default function History() {
           { loading ? 
                 <SkeletonLoader/> 
               : 
+              <>
+              { 
+                orders.length == 0? 
+                <Text style={{textAlign:'center', fontSize:20, marginTop:20, color:colors.text}}>No history to show</Text> 
+              : ''}
               <FlatList
                 data={orders}
                 renderItem={renderItem}
@@ -111,6 +116,7 @@ export default function History() {
                 ListFooterComponent={hasMore ? <SkeletonMiniLoader /> : null} // Show skeleton when loading more
                 numColumns={1} 
               />
+              </>
           }
         </View>
       </SafeAreaView>
