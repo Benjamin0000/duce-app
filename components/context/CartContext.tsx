@@ -10,6 +10,7 @@ export const CartProvider = ({ children }) => {
   const [branch, setBranch] = useState(null); // Current branch
   const [branches, setBranches] = useState([]); 
   const [authToken, setAuthToken] = useState({token:'', signedIn:false}); 
+  const [defaultUserData, setDefaltUserData] = useState({name:'', mobile:'',  email: '', address:''}); 
 
   const calculateTotal = (currentCart) => {
     let cost = 0;
@@ -35,8 +36,17 @@ export const CartProvider = ({ children }) => {
         setAuthToken(JSON.parse(savedToken));
       }
     }
-
     loadAuthToken(); 
+
+    const loadDefaultUserInfo = async ()=> {
+      const savedInfo = await AsyncStorage.getItem('savedUserInfo');
+      if (savedInfo) {
+        setDefaltUserData(JSON.parse(savedInfo));
+      }
+    }
+
+    loadDefaultUserInfo(); 
+
     console.log('cart context has mounted');
     console.log('auth token')
     console.log(authToken)
@@ -53,6 +63,10 @@ export const CartProvider = ({ children }) => {
   useEffect(()=>{
     AsyncStorage.setItem('authToken', JSON.stringify(authToken));
   }, [authToken])
+
+  useEffect(()=>{
+    AsyncStorage.setItem('savedUserInfo', JSON.stringify(defaultUserData));
+  }, [defaultUserData])
 
   const addToCart = (Item) => {
     if (!branch) return; // Do nothing if no branch is set
@@ -151,7 +165,9 @@ export const CartProvider = ({ children }) => {
       setBranches,
       authToken,
       setAuthToken,
-      emptyCart
+      emptyCart,
+      defaultUserData,
+      setDefaltUserData
     }}>
       {children}
     </CartContext.Provider>

@@ -20,7 +20,7 @@ export default function FinishOrder() {
     const { colors } = useTheme(); 
     const theme = useColorScheme();
     const [refreshKey, setRefreshKey] = useState(0);
-    const {total_cost, branch, authToken, setAuthToken, cart} = useContext(CartContext); 
+    const {total_cost, branch, authToken, setAuthToken, cart, defaultUserData, setDefaltUserData} = useContext(CartContext); 
     const [vat, setVat] = useState(0);
     const [loading, setLoading] = useState(false); 
     const [isDelivery, setIsDelivery] = useState(true);
@@ -31,7 +31,7 @@ export default function FinishOrder() {
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [selectedTime, setSelectedTime] = useState(new Date());
     
-    const [deliveryAddress, setDeliveryAddress] = useState('');
+    const [deliveryAddress, setDeliveryAddress] = useState(defaultUserData.address);
     const [locationPoint, setLocationPoint] = useState(''); 
     const [discountCode, setDiscountCode] = useState(''); 
     const [discounts, setDiscounts] = useState([]); 
@@ -42,9 +42,9 @@ export default function FinishOrder() {
     const [selectedLocation, setSelectedLocation] = useState({id:0, region: '', cost: 0});
     const [locations, setLocations] = useState([]);
 
-    const [name, setName] = useState('');
-    const [mobile, setMobile] = useState('');
-    const [email, setEmail] = useState('');
+    const [name, setName] = useState(defaultUserData.name);
+    const [mobile, setMobile] = useState(defaultUserData.mobile);
+    const [email, setEmail] = useState(defaultUserData.email);
     const [note, setNote] = useState(''); 
     const [showWebView, setShowWebView] = useState(false); 
     const [webViewUrl, setWebViewUrl] = useState('');
@@ -195,11 +195,17 @@ export default function FinishOrder() {
             setLoading(false)
             console.log('result'); 
             console.log(data);
-
             if(data.token)
                 setAuthToken({token:data.token}); 
-
             openWebView(data.url); 
+
+            setDefaltUserData(prevState => ({
+                ...prevState,
+                ...(name && { name }),
+                ...(mobile && { mobile }),
+                ...(email && { email }),
+                ...(deliveryAddress && { address: deliveryAddress })
+            })); 
 
         }else if(response.error){
             let error = response.error; 
@@ -238,12 +244,12 @@ export default function FinishOrder() {
 
     function validateEmail(email) {
         const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-        return emailPattern.test(email);
+        return emailPattern.test(email.trim());
     }
 
     function validatePhoneNumber(phoneNumber) {
         const phonePattern = /^0[1-9][01]\d{8}$/;
-        return phonePattern.test(phoneNumber);
+        return phonePattern.test(phoneNumber.trim());
     }
 
     function validateDate(date){
@@ -544,7 +550,7 @@ export default function FinishOrder() {
                                 <Text style={[styles.total_text, {color:colors.text}]}>VAT</Text>
                             </View>
                             <View style={{width:'50%', alignItems:'flex-end'}}>
-                                <Text style={[styles.total_text, {color:colors.text}]}>₦{ Number( discount > 0 ? totalCostWithDiscount().vat : totalCostNoDiscount().vat ).toLocaleString() }</Text>
+                                <Text style={[styles.total_text, {color:colors.text}]}>₦{ Number( discount > 0 ? totalCostWithDiscount().vat : totalCostNoDiscount().vat ).toLocaleString() } <Text style={{fontSize:11, color:'green'}}>{Number(branch.vat).toFixed(1)}%</Text></Text>
                             </View>
                         </View>
 

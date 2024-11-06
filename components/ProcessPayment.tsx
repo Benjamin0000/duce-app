@@ -11,6 +11,7 @@ const PaymentScreen = ({ Url, setShowWebView }) => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const {emptyCart} = useContext(CartContext); 
+  // const [paymentStatus, setPaymentStatus]
    
   // Close WebView and reset state
   const closeWebView = () => {
@@ -24,24 +25,22 @@ const PaymentScreen = ({ Url, setShowWebView }) => {
   
     // Detect success or failure from URL
     if (url.includes('payment-completed')) {
-
-        const timer = setTimeout(() => {
-            emptyCart(); 
+        // const timer = setTimeout(() => {
+          closeWebView();
+          router.push('/history');  
+          emptyCart(); 
+          successMessage('Payment Successful');
             //make a request to check payment status first then decide what to do. 
-            closeWebView();
-            router.push('/history');
-            successMessage('Payment Successful'); 
-          }, 1000);
+          // }, 1000);
         // Clean up the timer if the component unmounts before timeout completes
         return () => clearTimeout(timer);
     } else if (url.includes('payment-canceled')) {
       // Start the timer and only clear it if the component unmounts
       const timer = setTimeout(() => {
+        errorMessage('Payment Failed');
         //make a request to check payment status first then decide what to do. 
         closeWebView();
-        errorMessage('Payment Failed');
       }, 1000);
-  
       // Clean up the timer if the component unmounts before timeout completes
       return () => clearTimeout(timer);
     }

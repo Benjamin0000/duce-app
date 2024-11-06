@@ -26,7 +26,7 @@ function LogoTitle() {
 }
 
 const Index = () => {
-  const {branch, setBranches, setBranch} = useContext(CartContext);
+  const {branch, branches, setBranches, setBranch} = useContext(CartContext);
   const { colors } = useTheme(); 
   const [categories, setCategories] = useState([]); 
   const [loadingMenu, setLoadingMenu] = useState(true); 
@@ -66,9 +66,8 @@ const Index = () => {
       setCategories(result.data.items);
       setLoadingMenu(false);
       setBranches(result.data.branches);
-      
-      if(result.data.branches.length == 1){
-        setBranch(result.data.branches[0]); 
+      if(result.data.branches.length == 1 && !selectedBranch){
+          setBranch(result.data.branches[0]); 
       }
     } else if (result.error) {
       setError(result.error);
@@ -77,6 +76,7 @@ const Index = () => {
   };
 
   useEffect(()=>{ 
+    if(branches.length == 1 && categories.length > 0) return; 
     setLoadingMenu(true)
     if(isFocused){
       fetchData();
@@ -207,7 +207,8 @@ const styles = StyleSheet.create({
   }, 
   branch_select_button: {
     position: 'absolute',
-    bottom: 2,         // Adjust this to see the CartIcon more clearly
+    top:height * 0.42,
+    // bottom: 2,         // Adjust this to see the CartIcon more clearly
    // left: 10,         // Adjust this if it's too close to the edge
     backgroundColor: '#ff6347', // Visible background color
     borderTopRightRadius: 25,

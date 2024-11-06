@@ -6,9 +6,10 @@ import { get_url, getData } from '@/components/custom/custom_request';
 import HorizontalLoader  from '@/components/Loaders/horizontalLoader';
 import { errorMessage } from '@/components/custom/MessageAlert';
 import { Collapsible } from '@/components/Collapsible';
-import { useTheme } from '@react-navigation/native';
+import { useIsFocused, useTheme } from '@react-navigation/native';
 import { CartContext } from '../../../components/context/CartContext';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from "expo-router";
 
 const { height, width } = Dimensions.get('window');
 
@@ -25,8 +26,9 @@ export default function ShowItem() {
   const [openedAddons, setOpenedAddons] = useState([]); 
   const [cart_item, setCartItem] = useState({}); 
   const addOnsInCart = useRef([]);
-
-
+  const router = useRouter();
+  const isFocused = useIsFocused();
+  
   const item_id = rest[0]; 
   const item_name = rest[1]; 
 
@@ -56,15 +58,22 @@ export default function ShowItem() {
   }, [cart])
 
   useEffect(() => {
-    setLoading(true);
-    fetchData(); // Initial load of the first page
-  }, []);
+    if(isFocused){
+      console.log('show item page')
+      setLoading(true);
+      fetchData(); // Initial load of the first page
+    }
+  }, [isFocused]);
 
   const fetchData = async () => { // Start skeleton loader
-    console.log('request sent')
     const result = await getData(get_url('/get-item/'+item_id)); 
     if (result.data) {
         let item = result.data.item;
+        if(!item){
+          errorMessage('Item not found');
+          router.push('/(home)/');
+          return; 
+        }
         setItem(item); 
         setAddons(item.addons);
         let theItem = getItem(item.id)
@@ -85,7 +94,6 @@ export default function ShowItem() {
         errorMessage(`${result.error.message}`, `${result.error.title}`);
     }
     setLoading(false);
-    console.log('request ended')
   };
 
 

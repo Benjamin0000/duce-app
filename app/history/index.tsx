@@ -1,6 +1,6 @@
 import { Button, Text, View, StyleSheet, SafeAreaView, FlatList, Dimensions } from 'react-native';
 import { useState, useEffect, useContext } from 'react';
-import { useTheme } from '@react-navigation/native';
+import { useIsFocused, useTheme } from '@react-navigation/native';
 import { SkeletonLoader, SkeletonMiniLoader, getData, get_url } from '@/components/custom/custom_request' 
 import { CartContext } from '../../components/context/CartContext';
 import { errorMessage } from '@/components/custom/MessageAlert';
@@ -15,23 +15,35 @@ export default function History() {
   const [hasMore, setHasMore] = useState(true); // 
   const [orders, setOrders] = useState([]); 
   const router = useRouter();
-
-  const navigate = (id) => {
-    router.push('/history/'+id);
+  const isFocused = useIsFocused();
+  
+  const navigate = (item) => {
+    router.push(`/history/${item.id}/${item.orderID}`);
   };
 
-
-  function order_status(id)
-  {
-    if(id == 0)
-        return <Text style={{color:'#12C9E7'}}>Waiting</Text>
-    else if(id == 1)
-      return <Text style={{color:'#12E75F'}}>Processing</Text>
-    else if(id == 2)
-      return <Text style={{color:'#12E7C0'}}>Out for Delivery</Text>
-    else
-      return <Text style={{color:'#12E75F'}}>Delivered</Text>
+  function orderStatus(item) {
+    const statuses = {
+      delivery: {
+        0: { label: 'Waiting', color: '#F5A623' },         // Amber for "Waiting"
+        1: { label: 'Processing', color: '#4A90E2' },       // Blue for "Processing"
+        2: { label: 'Out for Delivery', color: '#F8E71C' }, // Yellow for "Out for Delivery"
+        3: { label: 'Delivered', color: '#7ED321' }         // Green for "Delivered"
+      },
+      pickup: {
+        0: { label: 'Waiting', color: '#F5A623' },          // Amber for "Waiting"
+        1: { label: 'Processing', color: '#4A90E2' },       // Blue for "Processing"
+        2: { label: 'Ready for pickup', color: '#BD10E0' }, // Purple for "Ready for Pickup"
+        3: { label: 'Back to stock', color: '#D0021B' },    // Red for "Back to Stock"
+        4: { label: 'Picked', color: '#7ED321' }            // Green for "Picked"
+      }
+    };
+  
+    const mode = item.is_pickup === 0 ? 'delivery' : 'pickup';
+    const { label, color } = statuses[mode][item.status] || { label: 'Unknown', color: '#000' };
+  
+    return <Text style={{ color }}>{label}</Text>;
   }
+  
 
 
   const fetchOrders = async ()=>{
@@ -39,8 +51,8 @@ export default function History() {
       if (result.data) {
         let data = result.data.orders;
         let total = data.length;
-        console.log('orders')
-        console.log(data)
+        // console.log('orders')
+        // console.log(data)
         if(total > 0)
             setOrders((prevItems) => [...prevItems, ...data]);
 
@@ -57,6 +69,23 @@ export default function History() {
   }
 
 
+  function formatDate(dateString) {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  }
+  
+  function formatTime(dateString) {
+    const date = new Date(dateString);
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12; // Convert to 12-hour format, `0` becomes `12`
+    return `${hours}:${minutes} ${ampm}`;
+  }
+
   const loadMoreItems = () => {
     if (hasMore) {
         fetchOrders();
@@ -64,32 +93,48 @@ export default function History() {
   };
 
   useEffect(() => {
-    setLoading(true);
-    fetchOrders(); // Initial load of the first page
-  }, []);
+    if(isFocused){
+      console.log('focusing onthe history screen ')
+      setOrders([])
+      setLoading(true);
+      fetchOrders(); // Initial load of the first page
+    }
+  }, [isFocused]);
 
   // Renders each order item in the FlatList
   const renderItem = ({ item }) => (
     <View style={[styles.orderCard, { backgroundColor: colors.card }]}>
-      <Text style={[styles.orderId, {color:colors.text}]}>Order ID: {item.orderID}</Text>
-      <Text style={[styles.status, {color:colors.text}]}>Order Status: {order_status(item.status)} </Text>
+      <Text style={[styles.orderId, {color:colors.text}]}>Order ID: {item.orderID.toUpperCase()}</Text>
+      <Text style={[styles.status, {color:colors.text}]}>Order Status: {orderStatus(item)} </Text>
       <Text style={[styles.status, {color:colors.text}]}>Discount:  {item.discount}%</Text>
-      <Text style={[styles.status, {color:colors.text}]}>Delivery Cost: ₦{Number(item.delivery_fee).toLocaleString()} </Text>
+      
 
-
-      {/* <Text style={[styles.status, {color:colors.text}]}>VAT:  ₦{Number(item.vat_cost).toLocaleString()}</Text> */}
-      <Text style={[styles.status, {color:colors.text}]}>Total Paid: ₦{Number(item.total_cost).toLocaleString()}</Text>
+      {item.vat_cost ? 
+       <Text style={[styles.status, {color:colors.text}]}>VAT:  ₦{Number(item.vat_cost).toLocaleString()}</Text>
+      : ''
+      }
+      { item.is_pickup == 0? 
+        <Text style={[styles.status, {color:colors.text}]}>Delivery Cost: ₦{Number(item.delivery_fee).toLocaleString()} </Text>
+          : null
+      }
+      <Text style={[styles.status, {color:colors.text}, {fontWeight:'bold'}]}>Total Paid: ₦{Number(item.total_cost).toLocaleString()}</Text>
       
       <View style={{width:'50%'}}>
-       <Button onPress={()=>navigate(item.id)} color={'#ff6347'} title="View Cart"/>
+       <Button onPress={()=>navigate(item)} color={'#ff6347'} title="View Cart"/>
       </View>
-      
-      <View style={{marginTop:15}}>
-        <Text style={[styles.orderId, {color:colors.text}]}>Delivery Personel</Text>
-        <Text style={{color:colors.text, fontSize:15, fontWeight:'bold'}}>John malague</Text>
-        <Text style={{color:colors.text}}>Contact Details</Text>
-        <Text style={{color:colors.text}}>08044546543, 09088765432</Text>
-      </View>
+        { item.is_pickup == 0 ? 
+          <View style={{marginTop:15}}>
+            <Text style={[styles.orderId, {color:colors.text}]}>Delivery Personel</Text>
+            <Text style={{color:colors.text, fontSize:15, fontWeight:'bold'}}>John malague</Text>
+            <Text style={{color:colors.text}}>Contact Details</Text>
+            <Text style={{color:colors.text}}>08044546543, 09088765432</Text>
+          </View>
+          : 
+          <View style={{marginTop:12}}>
+            <Text style={{color:colors.text}}>Pickup Date: {formatDate(item.pickup_date)}</Text>
+            <Text style={{color:colors.text}}>Pickup Time: {formatTime(item.pickup_time)}</Text>
+          </View>
+        }
 
 
     </View>

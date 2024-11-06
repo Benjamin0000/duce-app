@@ -16,6 +16,17 @@ export const getData = async (url: string, token?: string) => {
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         }
       });
+
+
+      if(response.data.error){
+        return {
+          error: {
+            title: 'Error',
+            message: response.data.error
+          }
+        }
+      }
+
       return {
         data:response.data 
       } 
@@ -66,6 +77,15 @@ export const postData = async (url: string, payload: any, token?: string) => {
         ...(token ? { Authorization: `Bearer ${token}` } : {})
       }
     });
+
+    if(response.data.error){
+      return {
+        error: {
+          title: 'Error',
+          message: response.data.error
+        }
+      }
+    }
     
     return {
       data: response.data
